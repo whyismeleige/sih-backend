@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 
-const UserSchema = new mongoose.Schema({
+const AdminSchema = new mongoose.Schema({
   email: {
     type: String,
     trim: true,
@@ -16,36 +16,33 @@ const UserSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["active", "inactive", "emergency", "evacuating"],
-    default: "inactive",
+    enum: ["online", "offline", "do_not_disturb"],
+    default: "offline",
   },
   metadata: {
     type: mongoose.Schema.Types.Mixed,
     default: {},
   },
-  location: {
-    latitude: Number,
-    longitude: Number,
-    accuracy: Number,
-    timestamp: Date,
+  organization: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Organization",
   },
   lastSeen: { type: Date, default: Date.now },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
 
-UserSchema.index({ email: 1 });
-UserSchema.index({ location: "2dsphere" });
+AdminSchema.index({ email: 1 });
 
-UserSchema.methods.comparePassword = async function (password) {
+AdminSchema.methods.comparePassword = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
 
-UserSchema.pre("save", async function (next) {
-  if (this.isNew || this.isModified("password")) {
+AdminSchema.pre("save", async function (next) {
+  if (this.isNew() || this.isModified("password")) {
     this.password = await bcrypt.hash(this.password, 12);
   }
   next();
 });
 
-module.exports = mongoose.model("User", UserSchema);
+module.exports = mongoose.model("Admin", AdminSchema);
